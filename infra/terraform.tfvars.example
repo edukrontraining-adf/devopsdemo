@@ -1,0 +1,17 @@
+# Copy this file to terraform.tfvars and fill in your values
+# DO NOT commit terraform.tfvars to version control (contains sensitive data)
+
+location            = "eastus"
+environment         = "dev"
+resource_group_name = "rg-devops-demo"
+acr_name            = "acrdevopsdemo"  # Must be globally unique
+acr_sku             = "Basic"
+vnet_name           = "vnet-devops-demo"
+aks_cluster_name    = "aks-devops-demo"
+node_count          = 2
+node_vm_size        = "Standard_D2s_v3"
+
+# Get these from Azure Service Principal
+# Create with: az ad sp create-for-rbac --name DevOpsDemo
+client_id     = "your-client-id"
+client_secret = "your-client-secret"
