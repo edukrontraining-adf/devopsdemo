@@ -1,0 +1,162 @@
+trigger:
+  branches:
+    include:
+    - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  dockerRegistryServiceConnection: 'AzureContainerRegistry'
+  imageRepository: 'genai-app'
+  containerRegistry: 'acrdevopsdemo.azurecr.io'  # Replace with your ACR
+  kubernetesConnection: 'AKSCluster'
+  namespaceName: 'default'
+
+stages:
+
+- stage: DeployDev
+  displayName: 'Deploy to Dev'
+  jobs:
+  - deployment: DeployToDev
+    displayName: 'Deploy to Dev Environment'
+    environment: 'dev'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download Kubernetes Manifests'
+            inputs:
+              artifactName: 'kubernetes-manifests'
+              targetPath: '$(Pipeline.Workspace)/k8s'
+          
+          - task: KubernetesManifest@0
+            displayName: 'Deploy to AKS (Dev)'
+            inputs:
+              action: 'deploy'
+              kubernetesServiceConnection: '$(kubernetesConnection)'
+              namespace: '$(namespaceName)'
+              manifests: |
+                $(Pipeline.Workspace)/k8s/deployment.yaml
+                $(Pipeline.Workspace)/k8s/service.yaml
+                $(Pipeline.Workspace)/k8s/configmap.yaml
+              containers: |
+                $(containerRegistry)/$(imageRepository):$(Build.BuildId)
+          
+          - task: KubernetesManifest@0
+            displayName: 'Apply Ingress (Dev)'
+            inputs:
+              action: 'deploy'
+              kubernetesServiceConnection: '$(kubernetesConnection)'
+              namespace: '$(namespaceName)'
+              manifests: |
+                $(Pipeline.Workspace)/k8s/ingress.yaml
+
+- stage: DeployQA
+  displayName: 'Deploy to QA'
+  dependsOn: DeployDev
+  condition: succeeded()
+  jobs:
+  - deployment: DeployToQA
+    displayName: 'Deploy to QA Environment'
+    environment: 'qa'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download Kubernetes Manifests'
+            inputs:
+              artifactName: 'kubernetes-manifests'
+              targetPath: '$(Pipeline.Workspace)/k8s'
+          
+          - task: KubernetesManifest@0
+            displayName: 'Deploy to AKS (QA)'
+            inputs:
+              action: 'deploy'
+              kubernetesServiceConnection: '$(kubernetesConnection)'
+              namespace: 'qa'
+              manifests: |
+                $(Pipeline.Workspace)/k8s/deployment.yaml
+                $(Pipeline.Workspace)/k8s/service.yaml
+                $(Pipeline.Workspace)/k8s/configmap.yaml
+              containers: |
+                $(containerRegistry)/$(imageRepository):$(Build.BuildId)
+          
+          - script: |
+              echo "Running QA Tests..."
+              kubectl rollout status deployment/genai-app -n qa --timeout=5m
+            displayName: 'Wait for QA Deployment'
+
+- stage: DeployProduction
+  displayName: 'Deploy to Production'
+  dependsOn: DeployQA
+  condition: succeeded()
+  jobs:
+  - deployment: DeployToProduction
+    displayName: 'Deploy to Production'
+    environment: 'production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download Kubernetes Manifests'
+            inputs:
+              artifactName: 'kubernetes-manifests'
+              targetPath: '$(Pipeline.Workspace)/k8s'
+          
+          - script: |
+              echo "Production Deployment Started"
+              echo "Image: $(containerRegistry)/$(imageRepository):$(Build.BuildId)"
+            displayName: 'Pre-deployment Check'
+          
+          - task: KubernetesManifest@0
+            displayName: 'Deploy to AKS (Production)'
+            inputs:
+              action: 'deploy'
+              kubernetesServiceConnection: '$(kubernetesConnection)'
+              namespace: 'production'
+              strategy: 'rolling'
+              manifests: |
+                $(Pipeline.Workspace)/k8s/deployment.yaml
+                $(Pipeline.Workspace)/k8s/service.yaml
+                $(Pipeline.Workspace)/k8s/hpa.yaml
+                $(Pipeline.Workspace)/k8s/configmap.yaml
+              containers: |
+                $(containerRegistry)/$(imageRepository):$(Build.BuildId)
+          
+          - script: |
+              echo "Waiting for production deployment..."
+              kubectl rollout status deployment/genai-app -n production --timeout=10m
+            displayName: 'Verify Production Deployment'
+
+- stage: Monitoring
+  displayName: 'Monitoring & Validation'
+  dependsOn: DeployProduction
+  condition: succeeded()
+  jobs:
+  - job: HealthCheck
+    displayName: 'Health Checks'
+    steps:
+    
+    - script: |
+        echo "Application Health Status:"
+        echo "Dev pods:"
+        kubectl get pods -n default -o wide
+        echo ""
+        echo "QA pods:"
+        kubectl get pods -n qa -o wide
+        echo ""
+        echo "Production pods:"
+        kubectl get pods -n production -o wide
+      displayName: 'Check Pod Status'
+    
+    - script: |
+        echo "Verifying health endpoints..."
+        # Add health check scripts here
+      displayName: 'Endpoint Validation'

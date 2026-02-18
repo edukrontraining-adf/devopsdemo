@@ -1,0 +1,123 @@
+trigger:
+  branches:
+    include:
+    - main
+    - develop
+  paths:
+    include:
+    - app/**
+    - pipelines/**
+    - k8s/**
+
+pr:
+  branches:
+    include:
+    - main
+    - develop
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  dockerRegistryServiceConnection: 'AzureContainerRegistry'
+  imageRepository: 'genai-app'
+  containerRegistry: 'acrdevopsdemo.azurecr.io'  # Replace with your ACR
+  dockerfilePath: '$(Build.SourcesDirectory)/app/Dockerfile'
+  tag: '$(Build.BuildId)'
+
+stages:
+- stage: Build
+  displayName: 'Build and Test'
+  jobs:
+  - job: BuildApp
+    displayName: 'Build Application'
+    steps:
+    
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.11'
+      displayName: 'Use Python 3.11'
+    
+    - script: |
+        python -m pip install --upgrade pip
+        pip install -r app/requirements.txt
+        pip install pytest pytest-cov
+      displayName: 'Install Dependencies'
+    
+    - script: |
+        pytest app/tests/ -v --cov=app --cov-report=xml
+      displayName: 'Run Unit Tests'
+      continueOnError: true
+    
+    - task: PublishCodeCoverageResults@1
+      inputs:
+        codeCoverageTool: Cobertura
+        summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
+      displayName: 'Publish Code Coverage'
+    
+    - task: Docker@2
+      displayName: 'Build Docker Image'
+      inputs:
+        command: 'build'
+        repository: '$(imageRepository)'
+        dockerfile: '$(dockerfilePath)'
+        containerRegistry: '$(dockerRegistryServiceConnection)'
+        tags: |
+          $(tag)
+          latest
+    
+    - task: Docker@2
+      displayName: 'Push Image to ACR'
+      inputs:
+        command: 'push'
+        repository: '$(imageRepository)'
+        containerRegistry: '$(dockerRegistryServiceConnection)'
+        tags: |
+          $(tag)
+          latest
+
+- stage: SecurityScan
+  displayName: 'Security & Quality Checks'
+  dependsOn: Build
+  jobs:
+  - job: SecurityScanning
+    displayName: 'Run Security Scans'
+    steps:
+    
+    - script: |
+        pip install bandit
+        bandit -r app/ -f json -o bandit-report.json || true
+      displayName: 'Run Bandit Security Scan'
+    
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: 'bandit-report.json'
+        artifactName: 'security-reports'
+      displayName: 'Publish Security Report'
+      condition: succeededOrFailed()
+    
+    - script: |
+        pip install pylint
+        pylint app/*.py --exit-zero
+      displayName: 'Code Quality Check (Pylint)'
+
+- stage: PublishArtifacts
+  displayName: 'Publish Artifacts'
+  dependsOn: SecurityScan
+  condition: succeeded()
+  jobs:
+  - job: PublishArtifact
+    displayName: 'Publish Build Artifacts'
+    steps:
+    
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: '$(Build.SourcesDirectory)/k8s'
+        artifactName: 'kubernetes-manifests'
+      displayName: 'Publish Kubernetes Manifests'
+    
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: '$(Build.SourcesDirectory)/infra'
+        artifactName: 'terraform-configs'
+      displayName: 'Publish Terraform Configs'
