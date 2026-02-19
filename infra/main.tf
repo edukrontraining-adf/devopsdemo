@@ -99,9 +99,11 @@ resource "azurerm_role_assignment" "aks_acr" {
 
 locals {
   common_tags = {
-    Environment = var.environment
-    Project     = "DevOpsDemo"
-    ManagedBy   = "Terraform"
-    CreatedAt   = timestamp()
+    Environment  = var.environment
+    Organization = "Edukron Training"
+    Project      = "GenAI Engine"
+    CostCenter   = "Engineering"
+    ManagedBy    = "Terraform"
+    CreatedAt    = timestamp()
   }
 }

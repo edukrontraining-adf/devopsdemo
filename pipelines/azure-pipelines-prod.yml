@@ -1,0 +1,64 @@
+trigger: none
+
+variables:
+  - name: ACR_NAME
+    value: '' # set in pipeline variables or variable group
+  - name: IMAGE_NAME
+    value: genai-engine
+  - name: K8S_NAMESPACE
+    value: production
+  - name: BUILD_TAG
+    value: '$(Build.BuildId)'
+
+stages:
+  - stage: Build
+    displayName: Build and Push Image
+    jobs:
+      - job: BuildAndPush
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: AzureCLI@2
+            displayName: Login to ACR
+            inputs:
+              azureSubscription: '$(azureServiceConnection)'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                az acr login --name $(ACR_NAME)
+
+          - script: |
+              IMAGE_TAG=$(ACR_NAME).azurecr.io/$(IMAGE_NAME):$(BUILD_TAG)
+              docker build -t $IMAGE_TAG -f app/Dockerfile .
+              docker push $IMAGE_TAG
+            displayName: Build and push Docker image
+
+  - stage: DeployProd
+    displayName: Deploy to Production
+    dependsOn: Build
+    condition: succeeded()
+    approval:
+      # Use environment approvals in Azure DevOps for production
+      # This section is informational; configure environment approvals in Azure DevOps GUI
+    jobs:
+      - deployment: DeployToAKS
+        displayName: Deploy to AKS (production)
+        environment: 'production' # configure environment with approvals and checks
+        pool:
+          vmImage: 'ubuntu-latest'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureCLI@2
+                  displayName: AKS Kubectl Apply
+                  inputs:
+                    azureSubscription: '$(azureServiceConnection)'
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      az aks get-credentials --resource-group $(RESOURCE_GROUP) --name $(AKS_CLUSTER) --overwrite-existing
+                      IMAGE_TAG=$(ACR_NAME).azurecr.io/$(IMAGE_NAME):$(BUILD_TAG)
+                      kubectl -n $(K8S_NAMESPACE) set image deployment/genai-engine genai-engine=$IMAGE_TAG || true
+                      kubectl -n $(K8S_NAMESPACE) apply -f k8s/prod
+                      kubectl -n $(K8S_NAMESPACE) rollout status deployment/genai-engine --timeout=180s

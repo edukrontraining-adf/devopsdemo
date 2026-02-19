@@ -8,10 +8,11 @@ pool:
 
 variables:
   dockerRegistryServiceConnection: 'AzureContainerRegistry'
-  imageRepository: 'genai-app'
-  containerRegistry: 'acrdevopsdemo.azurecr.io'  # Replace with your ACR
-  kubernetesConnection: 'AKSCluster'
-  namespaceName: 'default'
+  imageRepository: 'genai-engine'
+  containerRegistry: 'acredukrongenai.azurecr.io'
+  kubernetesConnection: 'aks-edukron-genai-dev'
+  organization: 'Edukron Training'
+  project: 'GenAI Engine'
 
 stages:
 
@@ -37,7 +38,7 @@ stages:
             inputs:
               action: 'deploy'
               kubernetesServiceConnection: '$(kubernetesConnection)'
-              namespace: '$(namespaceName)'
+              namespace: 'dev'
               manifests: |
                 $(Pipeline.Workspace)/k8s/deployment.yaml
                 $(Pipeline.Workspace)/k8s/service.yaml
@@ -50,7 +51,7 @@ stages:
             inputs:
               action: 'deploy'
               kubernetesServiceConnection: '$(kubernetesConnection)'
-              namespace: '$(namespaceName)'
+              namespace: 'dev'
               manifests: |
                 $(Pipeline.Workspace)/k8s/ingress.yaml
 
@@ -88,7 +89,7 @@ stages:
           
           - script: |
               echo "Running QA Tests..."
-              kubectl rollout status deployment/genai-app -n qa --timeout=5m
+              kubectl rollout status deployment/genai-engine -n qa --timeout=5m
             displayName: 'Wait for QA Deployment'
 
 - stage: DeployProduction
@@ -111,7 +112,8 @@ stages:
               targetPath: '$(Pipeline.Workspace)/k8s'
           
           - script: |
-              echo "Production Deployment Started"
+              echo "Production Deployment Started - $(organization)"
+              echo "Project: $(project)"
               echo "Image: $(containerRegistry)/$(imageRepository):$(Build.BuildId)"
             displayName: 'Pre-deployment Check'
           
@@ -131,7 +133,7 @@ stages:
                 $(containerRegistry)/$(imageRepository):$(Build.BuildId)
           
           - script: |
-              echo "Waiting for production deployment..."
+              echo "Waiting for production deployment.engine
               kubectl rollout status deployment/genai-app -n production --timeout=10m
             displayName: 'Verify Production Deployment'
 
@@ -144,14 +146,15 @@ stages:
     displayName: 'Health Checks'
     steps:
     
-    - script: |
-        echo "Application Health Status:"
-        echo "Dev pods:"
-        kubectl get pods -n default -o wide
+    - script: Edukron GenAI Engine - Health Status Check"
         echo ""
-        echo "QA pods:"
+        echo "Dev Environment:"
+        kubectl get pods -n dev -o wide
+        echo ""
+        echo "QA Environment:"
         kubectl get pods -n qa -o wide
         echo ""
+        echo "Production Environment
         echo "Production pods:"
         kubectl get pods -n production -o wide
       displayName: 'Check Pod Status'

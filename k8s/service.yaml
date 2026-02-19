@@ -1,17 +1,18 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: genai-app
-  namespace: default
+  name: genai-engine
+  namespace: production
   labels:
-    app: genai-app
+    app: genai-engine
+    organization: edukron
   annotations:
-    description: "Service for GenAI Application"
+    description: "Service for Edukron GenAI Engine"
 spec:
   type: ClusterIP  # Change to LoadBalancer if needed for external access
   
   selector:
-    app: genai-app
+    app: genai-engine
   
   ports:
   - name: http
@@ -24,8 +25,9 @@ spec:
 ---
 apiVersion: v1
 kind: ServiceAccount
-metadata:
-  name: genai-app
-  namespace: default
+metadata:engine
+  namespace: production
   labels:
+    app: genai-engine
+    organization: edukron
     app: genai-app

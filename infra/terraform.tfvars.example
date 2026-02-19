@@ -3,11 +3,11 @@
 
 location            = "eastus"
 environment         = "dev"
-resource_group_name = "rg-devops-demo"
-acr_name            = "acrdevopsdemo"  # Must be globally unique
-acr_sku             = "Basic"
-vnet_name           = "vnet-devops-demo"
-aks_cluster_name    = "aks-devops-demo"
+resource_group_name = "rg-edukron-genai-dev"
+acr_name            = "acredukrongenai"  # Must be globally unique
+acr_sku             = "Standard"
+vnet_name           = "vnet-edukron-genai-dev"
+aks_cluster_name    = "aks-edukron-genai-dev"
 node_count          = 2
 node_vm_size        = "Standard_D2s_v3"
 

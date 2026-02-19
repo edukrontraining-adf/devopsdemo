@@ -1,10 +1,11 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: genai-app
-  namespace: default
+  name: genai-engine
+  namespace: production
   labels:
-    app: genai-app
+    app: genai-engine
+    organization: edukron
     version: v1
 spec:
   replicas: 3  # Will be overridden by HPA
@@ -16,19 +17,20 @@ spec:
       maxUnavailable: 0
   
   selector:
-    matchLabels:
-      app: genai-app
+    matchLabels:engine
   
   template:
     metadata:
       labels:
+        app: genai-engine
+        organization: edukron
         app: genai-app
         version: v1
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "5000"
     
-    spec:
+    spec:engine
       serviceAccountName: genai-app
       
       # Security context
@@ -37,8 +39,8 @@ spec:
         runAsUser: 1000
         fsGroup: 1000
       
-      containers:
-      - name: genai-app
+      containers:engine
+        image: acredukrongenai.azurecr.io/genai-engine:latest
         image: acrdevopsdemo.azurecr.io/genai-app:latest  # Replace with your ACR
         imagePullPolicy: Always
         
@@ -117,6 +119,6 @@ spec:
                 matchExpressions:
                 - key: app
                   operator: In
-                  values:
+                  values:engine
                   - genai-app
               topologyKey: kubernetes.io/hostname

@@ -7,7 +7,7 @@ variable "location" {
 variable "resource_group_name" {
   description = "Name of the resource group"
   type        = string
-  default     = "rg-devops-demo"
+  default     = "rg-edukron-genai-dev"
 }
 
 variable "environment" {
@@ -23,7 +23,7 @@ variable "environment" {
 variable "acr_name" {
   description = "Name of Azure Container Registry (must be globally unique)"
   type        = string
-  default     = "acrdevopsdemo"
+  default     = "acredukrongenai"
   validation {
     condition     = can(regex("^[a-z0-9]{5,50}$", var.acr_name))
     error_message = "ACR name must be 5-50 lowercase alphanumeric characters."
@@ -43,13 +43,13 @@ variable "acr_sku" {
 variable "vnet_name" {
   description = "Name of Virtual Network"
   type        = string
-  default     = "vnet-devops-demo"
+  default     = "vnet-edukron-genai-dev"
 }
 
 variable "aks_cluster_name" {
   description = "Name of AKS cluster"
   type        = string
-  default     = "aks-devops-demo"
+  default     = "aks-edukron-genai-dev"
 }
 
 variable "node_count" {

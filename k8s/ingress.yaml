@@ -1,23 +1,24 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: genai-app-ingress
-  namespace: default
+  name: genai-engine-ingress
+  namespace: production
   labels:
-    app: genai-app
+    app: genai-engine
+    organization: edukron
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     kubernetes.io/ingress.class: "nginx"
 spec:
-  rules:
-  - host: "genai-app.local"  # Change to your domain
+  rules:.edukron.cloud"  # Update with your domain
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
+            name: genai-engine
             name: genai-app
             port:
               number: 80

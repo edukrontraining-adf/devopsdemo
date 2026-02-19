@@ -161,6 +161,19 @@ kubectl logs -f deployment/genai-app --all-containers=true
 6. **Use readiness probes** - Prevents traffic to unhealthy pods
 7. **Anti-affinity rules** - Spread pods across nodes
 
+## Production Manifests
+
+- A `prod/` subfolder contains production-grade manifests that complement the base manifests:
+  - `hpa-prod.yaml` — Horizontal Pod Autoscaler tuned for production (min 3, max 12)
+  - `pdb-prod.yaml` — PodDisruptionBudget to preserve availability during maintenance
+  - `ingress-prod.yaml` — TLS-enabled ingress example (nginx / AGIC notes)
+
+To deploy production manifests:
+```bash
+# Ensure context is pointed at the AKS cluster and the `production` namespace exists
+kubectl apply -f k8s/prod -n production
+```
+
 ## 📊 Monitoring
 
 ### Check Pod Status

@@ -1,6 +1,8 @@
 """
-Simple OpenSource GenAI Application
-A Flask-based web application demonstrating AI capabilities
+Edukron GenAI Engine Demo
+A production-ready Flask-based AI application demonstrating DevOps best practices
+Organization: Edukron Training
+Project: GenAI Engine
 """
 
 import os
@@ -28,8 +30,10 @@ def health_check():
 
 @app.route('/', methods=['GET'])
 def home():
-    """Home endpoint"""
-    return jsonify({
+    """Home endpoint"""Edukron GenAI Engine',
+        'version': '1.0.0',
+        'organization': 'Edukron Training',
+        'project': 'GenAI Engine
         'message': 'Welcome to DevOps GenAI Demo App',
         'version': '1.0.0',
         'endpoints': {
@@ -40,8 +44,9 @@ def home():
     }), 200
 
 
-@app.route('/about', methods=['GET'])
-def about():
+@app.route('/about', metEdukron GenAI Engine',
+        'organization': 'Edukron Training',
+        'description': 'Production-ready AI platform demonstrating end-to-end DevOps practices
     """About endpoint"""
     return jsonify({
         'application': 'GenAI Demo for Azure DevOps',

@@ -1,15 +1,16 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: genai-app-hpa
-  namespace: default
+  name: genai-engine-hpa
+  namespace: production
   labels:
-    app: genai-app
+    app: genai-engine
+    organization: edukron
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: genai-app
+    name: genai-engine
   
   minReplicas: 2
   maxReplicas: 10

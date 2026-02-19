@@ -1,4 +1,6 @@
-# Multi-stage build for OpenSource GenAI App
+# Multi-stage build for Edukron GenAI Engine
+# Organization: Edukron Training
+# Project: GenAI Engine Demo
 FROM python:3.11-slim as builder
 
 WORKDIR /app

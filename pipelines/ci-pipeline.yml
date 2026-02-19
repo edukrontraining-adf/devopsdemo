@@ -20,10 +20,12 @@ pool:
 
 variables:
   dockerRegistryServiceConnection: 'AzureContainerRegistry'
-  imageRepository: 'genai-app'
-  containerRegistry: 'acrdevopsdemo.azurecr.io'  # Replace with your ACR
+  imageRepository: 'genai-engine'
+  containerRegistry: 'acredukrongenai.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/app/Dockerfile'
   tag: '$(Build.BuildId)'
+  organization: 'Edukron Training'
+  project: 'GenAI Engine'
 
 stages:
 - stage: Build
